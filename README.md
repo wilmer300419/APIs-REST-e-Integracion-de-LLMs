@@ -72,7 +72,7 @@ flowchart LR
 Todos los errores devuelven el mismo formato JSON:
 
 ```json
-{ "status": 404, "error": "not_found", "message": "Documento 999 no encontrado", "path": "/documents/999" }
+{ "status": 404, "error": "not_found", "message": "Document 999 not found", "path": "/documents/999" }
 ```
 
 | Código | `error` | Cuándo ocurre |
@@ -95,7 +95,7 @@ Todos los errores devuelven el mismo formato JSON:
 | `POST` | `/ai/ask` | Preguntar a la base de conocimiento (RAG) | 200, 422, 502 |
 | `GET` | `/health` | Estado del servicio | 200 |
 
-Documentación interactiva con ejemplos de cada JSON: **http://localhost:8000/docs**
+Swagger UI en inglés (summary, description y ejemplos de cada JSON): **http://localhost:8000/docs**
 (especificación cruda en `/openapi.json`).
 
 ### Ejemplo de uso
@@ -106,9 +106,9 @@ Documentación interactiva con ejemplos de cada JSON: **http://localhost:8000/do
 curl -X POST http://localhost:8000/documents \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Guía de matrícula",
-    "content": "Para matricularse el estudiante debe pagar la matrícula y entregar el carné en la oficina de admisiones antes del primer día de clases.",
-    "tags": ["admisiones"]
+    "title": "Enrollment guide",
+    "content": "To enroll, the student must pay the tuition fee and hand in the student ID card at the admissions office before the first day of classes.",
+    "tags": ["admissions"]
   }'
 ```
 
@@ -117,20 +117,20 @@ curl -X POST http://localhost:8000/documents \
 ```bash
 curl -X POST http://localhost:8000/ai/ask \
   -H "Content-Type: application/json" \
-  -d '{"question": "¿Dónde debo entregar el carné?", "technique": "few_shot", "top_k": 3}'
+  -d '{"question": "Where do I hand in my student ID card?", "technique": "few_shot", "top_k": 3}'
 ```
 
 Respuesta:
 
 ```json
 {
-  "answer": "Respuesta: El carné se entrega en la oficina de admisiones.\nFuente: Guía de matrícula.",
+  "answer": "Answer: The student ID card must be handed in at the admissions office.\nSource: Enrollment guide.",
   "technique": "few_shot",
   "sources": [
     {
       "document_id": 1,
-      "title": "Guía de matrícula",
-      "text": "Para matricularse el estudiante debe pagar la matrícula y entregar el carné...",
+      "title": "Enrollment guide",
+      "text": "To enroll, the student must pay the tuition fee and hand in the student ID card...",
       "score": 1.342
     }
   ]

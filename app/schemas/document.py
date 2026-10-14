@@ -1,7 +1,6 @@
-"""Esquemas Pydantic (DTOs) para entrada y salida de la API de documentos.
+"""Esquemas Pydantic (DTOs) de la API de documentos.
 
-Cada campo lleva `description` y cada modelo un `example`, de modo que la
-documentación OpenAPI (/docs) muestre la estructura JSON exacta.
+Los textos visibles en Swagger UI (descripciones y ejemplos) están en inglés.
 Se usa `example` (singular) porque es la forma válida en OpenAPI 3.0.
 """
 from __future__ import annotations
@@ -12,88 +11,88 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class DocumentBase(BaseModel):
-    """Campos comunes de creación y actualización."""
+    """Fields shared by the create and update payloads."""
 
     title: str = Field(
         ..., min_length=3, max_length=120,
-        description="Título único del documento (3 a 120 caracteres). No distingue mayúsculas.",
+        description="Unique document title (3 to 120 characters). Case-insensitive.",
     )
     content: str = Field(
         ..., min_length=10,
-        description="Texto completo del documento (mínimo 10 caracteres). "
-                    "Es el texto que el RAG fragmenta y consulta.",
+        description="Full text of the document (at least 10 characters). "
+                    "This is the text the RAG pipeline splits into chunks and searches.",
     )
     tags: list[str] = Field(
         default_factory=list, max_length=10,
-        description="Etiquetas para clasificar el documento (máximo 10).",
+        description="Optional labels used to classify the document (maximum 10).",
     )
 
 
 class DocumentCreate(DocumentBase):
-    """Cuerpo de `POST /documents`."""
+    """Request body of `POST /documents`."""
 
     model_config = ConfigDict(json_schema_extra={"example": {
-        "title": "Guía de matrícula",
-        "content": "Para matricularse el estudiante debe pagar la matrícula y entregar el carné "
-                   "en la oficina de admisiones antes del primer día de clases.",
-        "tags": ["admisiones", "matrícula"],
+        "title": "Enrollment guide",
+        "content": "To enroll, the student must pay the tuition fee and hand in the student ID card "
+                   "at the admissions office before the first day of classes.",
+        "tags": ["admissions", "enrollment"],
     }})
 
 
 class DocumentUpdate(DocumentBase):
-    """Cuerpo de `PUT /documents/{id}` (reemplazo completo: se envían todos los campos)."""
+    """Request body of `PUT /documents/{id}` (full replacement: every field must be sent)."""
 
     model_config = ConfigDict(json_schema_extra={"example": {
-        "title": "Guía de matrícula 2026",
-        "content": "Para matricularse el estudiante debe pagar la matrícula y entregar el carné "
-                   "en la oficina de admisiones. El plazo vence una semana antes de iniciar clases.",
-        "tags": ["admisiones", "matrícula", "2026"],
+        "title": "Enrollment guide 2026",
+        "content": "To enroll, the student must pay the tuition fee and hand in the student ID card "
+                   "at the admissions office. The deadline is one week before classes start.",
+        "tags": ["admissions", "enrollment", "2026"],
     }})
 
 
 class DocumentResponse(DocumentBase):
-    """Representación pública de un documento."""
+    """Public representation of a document."""
 
     model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": {
         "id": 1,
-        "title": "Guía de matrícula",
-        "content": "Para matricularse el estudiante debe pagar la matrícula y entregar el carné "
-                   "en la oficina de admisiones antes del primer día de clases.",
-        "tags": ["admisiones", "matrícula"],
+        "title": "Enrollment guide",
+        "content": "To enroll, the student must pay the tuition fee and hand in the student ID card "
+                   "at the admissions office before the first day of classes.",
+        "tags": ["admissions", "enrollment"],
         "created_at": "2026-10-14T15:30:00.123456Z",
         "updated_at": "2026-10-14T15:30:00.123456Z",
     }})
 
-    id: int = Field(..., description="Identificador único autogenerado.")
-    created_at: datetime = Field(..., description="Fecha de creación (UTC, ISO 8601).")
-    updated_at: datetime = Field(..., description="Fecha de la última modificación (UTC, ISO 8601).")
+    id: int = Field(..., description="Auto-generated unique identifier.")
+    created_at: datetime = Field(..., description="Creation timestamp (UTC, ISO 8601).")
+    updated_at: datetime = Field(..., description="Last modification timestamp (UTC, ISO 8601).")
 
 
 class ValidationIssue(BaseModel):
-    """Un problema de validación en un campo concreto de la petición."""
+    """A validation problem found in a specific field of the request."""
 
-    field: str = Field(..., description="Ruta del campo con error (p. ej. `title` o `tags.0`).")
-    issue: str = Field(..., description="Descripción del problema.")
+    field: str = Field(..., description="Path of the invalid field (e.g. `title` or `tags.0`).")
+    issue: str = Field(..., description="Description of the problem.")
 
 
 class ErrorResponse(BaseModel):
-    """Formato uniforme de error: TODOS los errores de la API usan esta estructura."""
+    """Uniform error format: EVERY error returned by this API uses this structure."""
 
     model_config = ConfigDict(json_schema_extra={"example": {
         "status": 404,
         "error": "not_found",
-        "message": "Documento 999 no encontrado",
+        "message": "Document 999 not found",
         "path": "/documents/999",
     }})
 
-    status: int = Field(..., description="Código de estado HTTP (se repite en el cuerpo).")
+    status: int = Field(..., description="HTTP status code (repeated in the body).")
     error: str = Field(
-        ..., description="Código máquina del error: `not_found`, `conflict`, "
-                         "`validation_error`, `llm_unavailable`, `http_error` o `internal_error`.",
+        ..., description="Machine-readable error code: `not_found`, `conflict`, "
+                         "`validation_error`, `llm_unavailable`, `http_error` or `internal_error`.",
     )
-    message: str = Field(..., description="Mensaje legible para el usuario.")
-    path: str = Field(..., description="Ruta de la petición que originó el error.")
+    message: str = Field(..., description="Human-readable message.")
+    path: str = Field(..., description="Path of the request that caused the error.")
     details: list[ValidationIssue] = Field(
         default_factory=list,
-        description="Detalle por campo. Solo se incluye en errores 422 (validación).",
+        description="Per-field details. Only present in 422 (validation) errors.",
     )

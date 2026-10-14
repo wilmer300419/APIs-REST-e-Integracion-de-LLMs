@@ -1,7 +1,7 @@
-"""Piezas reutilizables para documentar respuestas en OpenAPI.
+"""Piezas reutilizables para documentar respuestas en OpenAPI (en inglés).
 
 Centraliza los ejemplos de error para que todas las rutas muestren
-exactamente el mismo formato JSON que devuelve la API en la práctica.
+exactamente el mismo JSON que la API devuelve en la práctica.
 """
 from __future__ import annotations
 
@@ -24,73 +24,70 @@ def _example(summary: str, status: int, error: str, message: str, path: str, det
     return {"summary": summary, "value": value}
 
 
-NOT_FOUND = {404: _error("Documento no encontrado", {
-    "no_existe": _example("El id no existe", 404, "not_found",
-                          "Documento 999 no encontrado", "/documents/999"),
+_INT_ISSUE = "Input should be a valid integer, unable to parse string as an integer"
+
+NOT_FOUND = {404: _error("Document not found", {
+    "not_found": _example("The id does not exist", 404, "not_found",
+                          "Document 999 not found", "/documents/999"),
 })}
 
-CONFLICT = {409: _error("Ya existe un documento con ese título", {
-    "titulo_duplicado": _example("Título repetido", 409, "conflict",
-                                 "Ya existe un documento con el título 'Guía de matrícula'", "/documents"),
+CONFLICT = {409: _error("A document with that title already exists", {
+    "duplicate_title": _example("Repeated title", 409, "conflict",
+                                "A document with the title 'Enrollment guide' already exists", "/documents"),
 })}
 
-INTERNAL_ERROR = {500: _error("Error interno inesperado (el detalle solo queda en el log)", {
-    "error_interno": _example("Fallo no controlado", 500, "internal_error",
-                              "Error interno del servidor", "/documents"),
+INTERNAL_ERROR = {500: _error("Unexpected internal error (details are only written to the server log)", {
+    "internal_error": _example("Unhandled failure", 500, "internal_error",
+                               "Internal server error", "/documents"),
 })}
 
-LLM_UNAVAILABLE = {502: _error("El proveedor del LLM falló o no está configurado", {
-    "sin_api_key": _example("Fallo al consultar el LLM", 502, "llm_unavailable",
-                            "Fallo al consultar el LLM: Incorrect API key provided", "/ai/ask"),
+LLM_UNAVAILABLE = {502: _error("The LLM provider failed or is not configured", {
+    "llm_failure": _example("Failed to query the LLM", 502, "llm_unavailable",
+                            "Failed to query the LLM: Incorrect API key provided", "/ai/ask"),
 })}
 
 
 def validation_error(examples: dict[str, dict]) -> dict:
     """Respuesta 422 con ejemplos propios de cada endpoint."""
-    return {422: _error("Datos de entrada inválidos", examples)}
+    return {422: _error("Invalid input data", examples)}
 
 
-# Ejemplos de 422 por tipo de endpoint -------------------------------------------------
 BODY_422 = validation_error({
-    "campos_invalidos": _example(
-        "Título y contenido demasiado cortos", 422, "validation_error", "Datos de entrada inválidos",
-        "/documents",
+    "invalid_fields": _example(
+        "Title and content too short", 422, "validation_error", "Invalid input data", "/documents",
         [{"field": "title", "issue": "String should have at least 3 characters"},
          {"field": "content", "issue": "String should have at least 10 characters"}]),
-    "campo_faltante": _example(
-        "Falta un campo obligatorio", 422, "validation_error", "Datos de entrada inválidos",
-        "/documents", [{"field": "content", "issue": "Field required"}]),
+    "missing_field": _example(
+        "A required field is missing", 422, "validation_error", "Invalid input data", "/documents",
+        [{"field": "content", "issue": "Field required"}]),
 })
 
 LIST_422 = validation_error({
-    "paginacion_invalida": _example(
-        "Parámetros de paginación fuera de rango", 422, "validation_error", "Datos de entrada inválidos",
-        "/documents", [{"field": "limit", "issue": "Input should be less than or equal to 100"}]),
+    "invalid_pagination": _example(
+        "Pagination parameters out of range", 422, "validation_error", "Invalid input data", "/documents",
+        [{"field": "limit", "issue": "Input should be less than or equal to 100"}]),
 })
 
 PATH_422 = validation_error({
-    "id_invalido": _example(
-        "El id no es un entero positivo", 422, "validation_error", "Datos de entrada inválidos",
-        "/documents/abc", [{"field": "document_id",
-                            "issue": "Input should be a valid integer, unable to parse string as an integer"}]),
+    "invalid_id": _example(
+        "The id is not a positive integer", 422, "validation_error", "Invalid input data",
+        "/documents/abc", [{"field": "document_id", "issue": _INT_ISSUE}]),
 })
 
 UPDATE_422 = validation_error({
-    "campos_invalidos": _example(
-        "Cuerpo inválido", 422, "validation_error", "Datos de entrada inválidos",
-        "/documents/1", [{"field": "title", "issue": "String should have at least 3 characters"}]),
-    "id_invalido": _example(
-        "El id no es un entero positivo", 422, "validation_error", "Datos de entrada inválidos",
-        "/documents/abc", [{"field": "document_id",
-                            "issue": "Input should be a valid integer, unable to parse string as an integer"}]),
+    "invalid_fields": _example(
+        "Invalid request body", 422, "validation_error", "Invalid input data", "/documents/1",
+        [{"field": "title", "issue": "String should have at least 3 characters"}]),
+    "invalid_id": _example(
+        "The id is not a positive integer", 422, "validation_error", "Invalid input data",
+        "/documents/abc", [{"field": "document_id", "issue": _INT_ISSUE}]),
 })
 
 ASK_422 = validation_error({
-    "tecnica_invalida": _example(
-        "Técnica de prompt no soportada", 422, "validation_error", "Datos de entrada inválidos",
-        "/ai/ask", [{"field": "technique",
-                     "issue": "Input should be 'zero_shot', 'few_shot' or 'chain_of_thought'"}]),
-    "pregunta_corta": _example(
-        "Pregunta demasiado corta", 422, "validation_error", "Datos de entrada inválidos",
-        "/ai/ask", [{"field": "question", "issue": "String should have at least 5 characters"}]),
+    "invalid_technique": _example(
+        "Unsupported prompt technique", 422, "validation_error", "Invalid input data", "/ai/ask",
+        [{"field": "technique", "issue": "Input should be 'zero_shot', 'few_shot' or 'chain_of_thought'"}]),
+    "short_question": _example(
+        "Question too short", 422, "validation_error", "Invalid input data", "/ai/ask",
+        [{"field": "question", "issue": "String should have at least 5 characters"}]),
 })

@@ -70,7 +70,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             {"field": ".".join(str(p) for p in e["loc"][1:]), "issue": e["msg"]}
             for e in exc.errors()
         ]
-        return _body(422, "validation_error", "Datos de entrada inválidos", request, details)
+        return _body(422, "validation_error", "Invalid input data", request, details)
 
     @app.exception_handler(StarletteHTTPException)
     async def handle_http_error(request: Request, exc: StarletteHTTPException):
@@ -80,4 +80,4 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def handle_unexpected(request: Request, exc: Exception):
         # 500: se registra el detalle en el log pero no se expone al cliente.
         logger.exception("Error no controlado")
-        return _body(500, "internal_error", "Error interno del servidor", request)
+        return _body(500, "internal_error", "Internal server error", request)

@@ -1,7 +1,8 @@
 """Técnicas de prompt engineering (patrón Strategy).
 
 Cada técnica es una clase que sabe construir los mensajes para el LLM a
-partir de la pregunta y del contexto recuperado por RAG.
+partir de la pregunta y del contexto recuperado por RAG. Los prompts están en
+inglés y piden responder en el mismo idioma de la pregunta.
 """
 from __future__ import annotations
 
@@ -10,9 +11,9 @@ from abc import ABC, abstractmethod
 from app.services.llm.client import Message
 
 SYSTEM_BASE = (
-    "Eres un asistente académico. Responde SOLO con base en el CONTEXTO dado. "
-    "Si el contexto no contiene la respuesta, di que no tienes esa información. "
-    "Responde en español."
+    "You are an academic assistant. Answer ONLY using the given CONTEXT. "
+    "If the context does not contain the answer, say you do not have that information. "
+    "Answer in the same language as the question."
 )
 
 
@@ -26,7 +27,7 @@ class PromptStrategy(ABC):
 
     @staticmethod
     def _user_message(question: str, context: str) -> Message:
-        return {"role": "user", "content": f"CONTEXTO:\n{context}\n\nPREGUNTA: {question}"}
+        return {"role": "user", "content": f"CONTEXT:\n{context}\n\nQUESTION: {question}"}
 
 
 class ZeroShotPrompt(PromptStrategy):
@@ -44,15 +45,15 @@ class FewShotPrompt(PromptStrategy):
     name = "few_shot"
 
     _EXAMPLES: list[Message] = [
-        {"role": "user", "content": "CONTEXTO:\nLa biblioteca abre de 7am a 9pm.\n\nPREGUNTA: ¿Hasta qué hora abre la biblioteca?"},
-        {"role": "assistant", "content": "Respuesta: Hasta las 9pm.\nFuente: documento sobre la biblioteca."},
-        {"role": "user", "content": "CONTEXTO:\nLa matrícula cuesta 500.\n\nPREGUNTA: ¿Hay cafetería?"},
-        {"role": "assistant", "content": "Respuesta: No tengo esa información en el contexto.\nFuente: ninguna."},
+        {"role": "user", "content": "CONTEXT:\nThe library is open from 7am to 9pm.\n\nQUESTION: What time does the library close?"},
+        {"role": "assistant", "content": "Answer: It closes at 9pm.\nSource: library document."},
+        {"role": "user", "content": "CONTEXT:\nTuition costs 500.\n\nQUESTION: Is there a cafeteria?"},
+        {"role": "assistant", "content": "Answer: I do not have that information in the context.\nSource: none."},
     ]
 
     def build(self, question: str, context: str) -> list[Message]:
         return [
-            {"role": "system", "content": SYSTEM_BASE + " Usa el formato 'Respuesta: ... Fuente: ...'."},
+            {"role": "system", "content": SYSTEM_BASE + " Use the format 'Answer: ... Source: ...'."},
             *self._EXAMPLES,
             self._user_message(question, context),
         ]
@@ -66,9 +67,9 @@ class ChainOfThoughtPrompt(PromptStrategy):
     def build(self, question: str, context: str) -> list[Message]:
         instruction = (
             SYSTEM_BASE
-            + " Razona paso a paso: 1) identifica los datos relevantes del contexto, "
-            "2) relaciónalos con la pregunta, 3) concluye. "
-            "Termina con una línea 'Respuesta final: ...'."
+            + " Reason step by step: 1) identify the relevant facts in the context, "
+            "2) relate them to the question, 3) conclude. "
+            "Finish with a line 'Final answer: ...'."
         )
         return [{"role": "system", "content": instruction}, self._user_message(question, context)]
 

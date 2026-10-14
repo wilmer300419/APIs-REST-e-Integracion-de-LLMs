@@ -16,14 +16,14 @@ class DocumentService:
     def create(self, data: DocumentCreate) -> Document:
         """Crea un documento; el título debe ser único."""
         if self._repo.find_by_title(data.title):
-            raise ConflictError(f"Ya existe un documento con el título '{data.title}'")
+            raise ConflictError(f"A document with the title '{data.title}' already exists")
         return self._repo.add(data.title, data.content, data.tags)
 
     def get(self, document_id: int) -> Document:
         """Obtiene un documento o lanza NotFoundError."""
         doc = self._repo.get(document_id)
         if doc is None:
-            raise NotFoundError(f"Documento {document_id} no encontrado")
+            raise NotFoundError(f"Document {document_id} not found")
         return doc
 
     def list(self, skip: int = 0, limit: int = 20) -> list[Document]:
@@ -35,11 +35,11 @@ class DocumentService:
         doc = self.get(document_id)
         other = self._repo.find_by_title(data.title)
         if other and other.id != document_id:
-            raise ConflictError(f"Ya existe un documento con el título '{data.title}'")
+            raise ConflictError(f"A document with the title '{data.title}' already exists")
         doc.update(data.title, data.content, data.tags)
         return doc
 
     def delete(self, document_id: int) -> None:
         """Elimina un documento o lanza NotFoundError."""
         if not self._repo.delete(document_id):
-            raise NotFoundError(f"Documento {document_id} no encontrado")
+            raise NotFoundError(f"Document {document_id} not found")

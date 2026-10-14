@@ -1,7 +1,7 @@
 """Punto de entrada de la aplicación FastAPI.
 
 Ejecutar:  uvicorn app.main:app --reload
-Docs OpenAPI:  http://localhost:8000/docs   |   JSON: /openapi.json
+Swagger UI:  http://localhost:8000/docs   |   JSON OpenAPI: /openapi.json
 """
 from __future__ import annotations
 
@@ -12,34 +12,42 @@ from app.container import Container
 from app.core.config import Settings
 from app.core.exceptions import register_exception_handlers
 
-
+# Texto que Swagger UI muestra en la parte superior (en inglés, formato Markdown).
 API_DESCRIPTION = """
-API REST para gestionar una **base de conocimiento** y consultarla con un **LLM** mediante **RAG**.
+REST API to manage a **knowledge base** of documents and query it with an **LLM** using **RAG**
+(Retrieval-Augmented Generation).
 
-## Flujo de uso recomendado
-1. `POST /documents` para cargar uno o más documentos.
-2. `POST /ai/ask` para hacer preguntas sobre ellos (elige la técnica de prompt).
-3. Revisa `sources` en la respuesta para ver qué fragmentos sustentan la respuesta.
+## Recommended workflow
+1. `POST /documents` to load one or more documents.
+2. `POST /ai/ask` to ask questions about them (choose the prompt technique).
+3. Check `sources` in the response to see which chunks support the answer.
 
-## Formato uniforme de errores
-Todos los errores devuelven el mismo JSON:
+## Prompt engineering techniques
+| `technique` | Description |
+|---|---|
+| `zero_shot` | Direct instruction with context and question, no examples. |
+| `few_shot` | Includes example Q&A pairs to fix the `Answer / Source` format. |
+| `chain_of_thought` | Asks the model to reason step by step before the final answer. |
+
+## Uniform error format
+Every error returns the same JSON structure:
 ```json
-{ "status": 404, "error": "not_found", "message": "Documento 999 no encontrado", "path": "/documents/999" }
+{ "status": 404, "error": "not_found", "message": "Document 999 not found", "path": "/documents/999" }
 ```
-En errores **422** se añade `details` con una entrada por campo inválido.
+`422` errors also include a `details` array with one entry per invalid field.
 
-| Código | `error` | Cuándo ocurre |
+| Status | `error` | When it happens |
 |---|---|---|
-| 400-499 | `http_error` | Ruta inexistente o método no permitido |
-| 404 | `not_found` | El recurso no existe |
-| 409 | `conflict` | Título de documento duplicado |
-| 422 | `validation_error` | El JSON, parámetro de ruta o query no cumple las reglas |
-| 500 | `internal_error` | Error inesperado del servidor |
-| 502 | `llm_unavailable` | El proveedor del LLM falló o no está configurado |
+| 400-499 | `http_error` | Unknown route or method not allowed |
+| 404 | `not_found` | The resource does not exist |
+| 409 | `conflict` | Duplicate document title |
+| 422 | `validation_error` | Body, path or query parameters break the validation rules |
+| 500 | `internal_error` | Unexpected server error |
+| 502 | `llm_unavailable` | The LLM provider failed or is not configured |
 
-## Modo del LLM
-Con `LLM_PROVIDER=fake` (por defecto) las respuestas empiezan con `[FAKE-LLM]` y no consumen API.
-Con `LLM_PROVIDER=openai` y `OPENAI_API_KEY` se usa GPT-4o.
+## LLM mode
+With `LLM_PROVIDER=fake` (default) answers start with `[FAKE-LLM]` and no external API is called.
+With `LLM_PROVIDER=openai` and `OPENAI_API_KEY` set, GPT-4o is used.
 """
 
 
@@ -47,16 +55,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     """Fábrica de la app: facilita crear instancias aisladas para las pruebas."""
     settings = settings or Settings.from_env()
     app = FastAPI(
-        title="API Proyecto Semestral",
+        title="Semester Project API",
         version="1.0.0",
         description=API_DESCRIPTION,
-        contact={"name": "Proyecto Semestral Integrador - UMB"},
+        contact={"name": "Semester Integrator Project - UMB"},
         openapi_tags=[
-            {"name": "Documentos",
-             "description": "CRUD de la base de conocimiento: crear, listar, consultar, actualizar y eliminar."},
-            {"name": "IA (RAG)",
-             "description": "Preguntas en lenguaje natural respondidas por un LLM con contexto de los documentos."},
-            {"name": "Sistema", "description": "Utilidades de monitoreo."},
+            {"name": "Documents",
+             "description": "Knowledge base CRUD: create, list, retrieve, update and delete documents."},
+            {"name": "AI (RAG)",
+             "description": "Natural-language questions answered by an LLM using the stored documents as context."},
+            {"name": "System", "description": "Monitoring utilities."},
         ],
     )
     # La práctica exige OpenAPI 3.0 (FastAPI emite 3.1 por defecto).
@@ -66,8 +74,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(documents.router)
     app.include_router(ai.router)
 
-    @app.get("/health", tags=["Sistema"], summary="Estado del servicio")
+    @app.get("/health", tags=["System"], summary="Service health check",
+             response_description="The service is up and running.",
+             responses={200: {"content": {"application/json": {"example": {"status": "ok"}}}}})
     def health():
+        """Returns `{"status": "ok"}` when the API is running. Useful for monitoring and CI."""
         return {"status": "ok"}
 
     return app

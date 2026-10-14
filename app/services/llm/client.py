@@ -26,7 +26,7 @@ class FakeLLMClient(LLMClient):
 
     def generate(self, messages: list[Message]) -> str:
         last_user = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
-        return f"[FAKE-LLM] Mensajes recibidos: {len(messages)}. Entrada: {last_user[:80]}"
+        return f"[FAKE-LLM] Messages received: {len(messages)}. Input: {last_user[:80]}"
 
 
 class OpenAILLMClient(LLMClient):
@@ -34,7 +34,7 @@ class OpenAILLMClient(LLMClient):
 
     def __init__(self, api_key: str, model: str) -> None:
         if not api_key:
-            raise LLMUnavailableError("OPENAI_API_KEY no está configurada")
+            raise LLMUnavailableError("OPENAI_API_KEY is not configured")
         from openai import OpenAI  # import diferido: solo si se usa OpenAI
 
         self._client = OpenAI(api_key=api_key)
@@ -47,7 +47,7 @@ class OpenAILLMClient(LLMClient):
             )
             return response.choices[0].message.content or ""
         except Exception as exc:  # errores de red, cuota, autenticación...
-            raise LLMUnavailableError(f"Fallo al consultar el LLM: {exc}") from exc
+            raise LLMUnavailableError(f"Failed to query the LLM: {exc}") from exc
 
 
 def build_llm_client(settings: Settings) -> LLMClient:

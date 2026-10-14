@@ -24,8 +24,13 @@ from app.services.llm.client import LLMClient
 from app.services.llm.prompts import STRATEGIES
 
 _STOPWORDS = {
+    # Español
     "el", "la", "los", "las", "de", "del", "y", "o", "a", "en", "un", "una", "que",
     "es", "se", "por", "para", "con", "al", "como", "cual", "cuales", "son", "su",
+    # English
+    "the", "of", "and", "or", "an", "in", "on", "at", "to", "is", "are", "was", "were",
+    "what", "which", "who", "when", "where", "how", "do", "does", "i", "my", "me", "we",
+    "you", "your", "for", "with", "it", "its", "be", "by", "from", "that", "this",
 }
 
 
@@ -77,7 +82,7 @@ class Retriever:
 class RagService:
     """Caso de uso: responder preguntas usando documentos + LLM."""
 
-    NO_CONTEXT_MESSAGE = "No encontré información relacionada en la base de conocimiento."
+    NO_CONTEXT_MESSAGE = "No related information was found in the knowledge base."
 
     def __init__(self, repository: DocumentRepository, llm: LLMClient, retriever: Retriever) -> None:
         self._repo = repository
